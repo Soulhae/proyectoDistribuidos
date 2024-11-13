@@ -4,7 +4,6 @@ import numpy      as np
 import pandas as pd
 import time
 import matplotlib.pyplot as plt
-import os
 
 # Load parameters from config.csv
 def config():
@@ -19,23 +18,16 @@ def config():
     }
     return params
 
-# def plot_information_gain(ig_scores, max_points=100):
-#     indices = [x[0] for x in ig_scores][:max_points]
-#     ig_values = [x[1] for x in ig_scores][:max_points]
-    
-#     plt.figure(figsize=(10, 6))
-#     plt.bar(indices, ig_values, color='skyblue')
-#     plt.xlabel('Number of variable')
-#     plt.ylabel('Inform. Gain')
-#     plt.title('Ganancia Información')
-#     plt.grid(axis='y', linestyle='--', alpha=0.5)
-#     plt.show()    
-
 def plot_information_gain(ig_scores, top_k_relevantes, top_k_indices):
-    top_7_ig_scores = sorted(ig_scores, key=lambda x: x[1], reverse=True)[:7]
+    top_k_ig_scores = sorted(ig_scores, key=lambda x: x[1], reverse=True)[:top_k_relevantes]
     
     indices = [x[0] for x in ig_scores]
     ig_values = [x[1] for x in ig_scores]
+
+    indicesTop = [x[0] for x in top_k_ig_scores]
+    # print(indicesTop)
+    ig_valuesTop = [x[1] for x in top_k_ig_scores]
+    # print(ig_valuesTop)
 
     plt.figure(figsize=(10, 6))
     plt.subplot(1, 2, 1)
@@ -44,17 +36,17 @@ def plot_information_gain(ig_scores, top_k_relevantes, top_k_indices):
     plt.ylabel('Inform. Gain')
     plt.title('Ganancia Información')
     plt.grid(axis='y', linestyle='--', alpha=0.5)
+    plt.xticks(np.arange(0, max(indices)+1, 5))
 
-    indicesTop = [x[0] for x in top_7_ig_scores]
-    ig_valuesTop = [x[1] for x in top_7_ig_scores]
-    
     plt.subplot(1, 2, 2)
-    plt.bar(indicesTop, ig_valuesTop, color='orange')
+    bar_width = 0.4
+    positions = np.arange(len(indicesTop))
+    plt.bar(positions, ig_valuesTop, color='orange', width=bar_width)
+    plt.xticks(positions, indicesTop)
     plt.xlabel('Number of variable')
     plt.ylabel('Inform. Gain')
     plt.title(f'Top-{top_k_relevantes} Inform. Gain')
     plt.grid(axis='y', linestyle='--', alpha=0.5)
-    plt.xticks(indicesTop)
 
     plt.tight_layout()
     plt.show()
@@ -68,18 +60,19 @@ def select_top_k_variables(features, ig_scores, K):
 def calculate_Hyx(features, labels, m, tau, c, B):
     Hyx = 0
     N = len(features)
-    bin_edges = np.linspace(np.min(features), np.max(features), B + 1)
-    for j in range(B):
+    bin_edges = np.linspace(np.min(features), np.max(features), B)
+    for j in range(B-1):
         indices_j = np.where((features >= bin_edges[j]) & (features < bin_edges[j + 1]))[0]
+        # print(indices_j)
         if len(indices_j) > 0:
             dj_samples = labels[indices_j]
+            # print(dj_samples)
             DE_dj = entropy_disp(dj_samples, m, tau, c)
             Hyx += (len(dj_samples) / N) * DE_dj
     return Hyx
 
 def calculate_final_DE(probabilities, c, m):
-    non_zero_probs = probabilities[probabilities > 0]
-    DE = -np.sum(non_zero_probs * np.log2(non_zero_probs + 1e-10))
+    DE = -np.sum(probabilities * np.log2(probabilities + 1e-10))
     r = c ** m
     nDE = DE / np.log2(r)
     return DE, nDE
@@ -124,10 +117,9 @@ def norm_data_sigmoidal(data):
 
 # Dispersion entropy
 def entropy_disp(data, m, tau, c):
-    normalized_data = norm_data_sigmoidal(data)
     # with np.printoptions(threshold=np.inf):
     #     print(data)
-    embedding_vectors = create_embedding_vectors(normalized_data, m, tau)
+    embedding_vectors = create_embedding_vectors(data, m, tau)
     symbols = map_to_symbols(embedding_vectors, c)
     patterns = convert_to_patterns(symbols, c)
     num_patterns = c ** m
@@ -142,14 +134,19 @@ def calculate_Hy(labels, m, tau, c):
 #Information gain
 def inform_gain(features, labels, m, tau, c):    
     Hy = calculate_Hy(labels, m, tau, c)
+    # if(Hy < 0 or Hy > 1):
+    #     print('Hy fuera de rango')
     # print(str(Hy)+" hy")
     ig_scores = []
     B = int(np.sqrt(len(features)))
     for i in range(features.shape[1]):
         Hyx = calculate_Hyx(features[:, i], labels, m, tau, c, B)
+        # if(Hyx < 0 or Hyx > 1):
+        #     print('Hyx fuera de rango')
         # print(str(Hyx)+" hyx")
         ig = Hy - Hyx 
         # print(str(ig)+" ig")
+        # print(ig)
         ig_scores.append((i, ig))
     return ig_scores
 
@@ -158,10 +155,6 @@ def main():
     start_time = time.time()
     params = config()
 
-    output_directory = './output'
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
-
     m = params['embedding_dim']
     tau = params['tau']
     c = params['num_symbols']
@@ -169,27 +162,30 @@ def main():
 
     # print(m,tau,c,top_k_relevantes)
     
-    data = pd.read_csv('./output/DataClass.csv', sep=',', header=None)
+    data = pd.read_csv('./DataClass.csv', sep=',', header=None)
     # print(data.head(15))
+    # print(len(data))
     features = data.iloc[:, :-1].to_numpy() #Características
+    # print(features)
+    features = norm_data_sigmoidal(features)
+    # print(features)
     labels = data.iloc[:, -1].to_numpy() #Clases
     # print("Características (features):", features.shape)
-    # print("Etiquetas (labels):", labels.shape)  
-    
+    # print("Etiquetas (labels):", labels.shape) 
+
     ig_scores = inform_gain(features, labels, m, tau, c)
     features_top_k, top_k_indices = select_top_k_variables(features, ig_scores, top_k_relevantes)
 
     # with np.printoptions(threshold=np.inf):
     #     print(features_top_k)
     
-    pd.DataFrame(top_k_indices).to_csv('./output/Idx_variable.csv', header=False, index=False)
-    pd.DataFrame(features_top_k).to_csv('./output/DataIG.csv', header=False, index=False)
+    pd.DataFrame(top_k_indices).to_csv('./Idx_variable.csv', header=False, index=False)
+    pd.DataFrame(features_top_k).to_csv('./DataIG.csv', header=False, index=False)
     
     end_time = time.time()
     elapsed_time = end_time - start_time
 
-    # plot_information_gain(ig_scores)
-    plot_information_gain(ig_scores, 7, top_k_indices)
+    plot_information_gain(ig_scores, 7, top_k_indices)  # Modificar el 7 si es q se quiere mostrar más features
     
     print(f"Total Runtime ig.py: {elapsed_time:.2f} seconds")
 

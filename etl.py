@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import random
 import time
-import os
 
 # Load parameters from config.csv
 def config():
@@ -40,27 +39,12 @@ def preprocess_data(data):
 
     return data
 
-def select_samples_by_index(class_file, idx_file):
-    class_data = pd.read_csv(class_file, header=None)
+def select_samples_by_index(data_file, idx_file):
+    data = pd.read_csv(data_file, header=None)
+    indices = pd.read_csv(idx_file, header=None).iloc[:, 0].astype(int)
     
-    indices = pd.read_csv(idx_file, header=None).iloc[:, 0]
-    
-    num_rows = len(class_data)
-    
-    valid_indices = indices[indices < num_rows].astype(int)
-    
-    selected_samples = class_data.iloc[valid_indices]
-    
-    return selected_samples
+    selected_samples = data.iloc[indices]
 
-def select_random_samples(class_file, M):
-    class_data = pd.read_csv(class_file, header=None)
-    
-    num_rows = len(class_data)
-    M = min(M, num_rows)
-    
-    selected_samples = class_data.sample(n=M, random_state=42)
-    
     return selected_samples
     
 # Beginning ...
@@ -68,58 +52,27 @@ def main():
     start_time = time.time()
     params = config()
 
-    output_directory = './output'
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
-
-    raw_data = pd.read_csv('./input/KDDTrain.txt', sep=',', header=None)
+    raw_data = pd.read_csv('./KDDTrain.txt', sep=',', header=None)
     raw_data = preprocess_data(raw_data)
-    raw_data.to_csv('./output/Data.csv', index=False, header=False)
+    raw_data.to_csv('./Data.csv', index=False, header=False)
     
     class1 = raw_data[raw_data.iloc[:, -1] == 1]
     class2 = raw_data[raw_data.iloc[:, -1] == 2]
     class3 = raw_data[raw_data.iloc[:, -1] == 3]
 
-    class1.to_csv('./output/class1.csv', index=False, header=False)
-    class2.to_csv('./output/class2.csv', index=False, header=False)
-    class3.to_csv('./output/class3.csv', index=False, header=False)
-
-    class1_file = './output/class1.csv'
-    class2_file = './output/class2.csv'
-    class3_file = './output/class3.csv'
+    class1.to_csv('./class1.csv', index=False, header=False)
+    class2.to_csv('./class2.csv', index=False, header=False)
+    class3.to_csv('./class3.csv', index=False, header=False)
     
-    idx_class1_file = './input/idx_class1.csv'
-    idx_class2_file = './input/idx_class2.csv'
-    idx_class3_file = './input/idx_class3.csv'
+    idx_class1_file = './idx_class1.csv'
+    idx_class2_file = './idx_class2.csv'
+    idx_class3_file = './idx_class3.csv'
     
-    M = random.randint(1500, 2200)
-    # print(M)
+    data_file = './Data.csv'
     
-    selected_class1_idx = select_samples_by_index(class1_file, idx_class1_file)
-    selected_class2_idx = select_samples_by_index(class2_file, idx_class2_file)
-    selected_class3_idx = select_samples_by_index(class3_file, idx_class3_file)
-    
-    remaining_class1 = M - len(selected_class1_idx)
-    remaining_class2 = M - len(selected_class2_idx)
-    remaining_class3 = M - len(selected_class3_idx)
-    
-    if len(selected_class1_idx) < M:
-        selected_class1_random = select_random_samples(class1_file, M - len(selected_class1_idx))
-        selected_class1 = pd.concat([selected_class1_idx, selected_class1_random], ignore_index=True)
-    else:
-        selected_class1 = selected_class1_idx.head(M)
-
-    if len(selected_class2_idx) < M:
-        selected_class2_random = select_random_samples(class2_file, M - len(selected_class2_idx))
-        selected_class2 = pd.concat([selected_class2_idx, selected_class2_random], ignore_index=True)
-    else:
-        selected_class2 = selected_class2_idx.head(M)
-
-    if len(selected_class3_idx) < M:
-        selected_class3_random = select_random_samples(class3_file, M - len(selected_class3_idx))
-        selected_class3 = pd.concat([selected_class3_idx, selected_class3_random], ignore_index=True)
-    else:
-        selected_class3 = selected_class3_idx.head(M)
+    selected_class1 = select_samples_by_index(data_file, idx_class1_file)
+    selected_class2 = select_samples_by_index(data_file, idx_class2_file)
+    selected_class3 = select_samples_by_index(data_file, idx_class3_file)
     
     # print(str(len(selected_class1)) + " Normal")
     # print(str(len(selected_class2)) + " DOS")
@@ -128,7 +81,7 @@ def main():
 
     all_selected_samples = pd.concat([selected_class1, selected_class2, selected_class3], ignore_index=True)
     
-    all_selected_samples.to_csv('./output/DataClass.csv', index=False, header=False)
+    all_selected_samples.to_csv('./DataClass.csv', index=False, header=False)
 
     end_time = time.time()
     elapsed_time = end_time - start_time
