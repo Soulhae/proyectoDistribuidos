@@ -53,6 +53,7 @@ def main():
     #print(sigma, k)			
     
     data = load_data().values[:3000]
+    pd.DataFrame(data).to_csv('./Data.csv', header=False, index=False)
 
     projected_data = kpca_gauss(data, sigma, k)
 

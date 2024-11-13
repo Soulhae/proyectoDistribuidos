@@ -134,15 +134,15 @@ def calculate_Hy(labels, m, tau, c):
 #Information gain
 def inform_gain(features, labels, m, tau, c):    
     Hy = calculate_Hy(labels, m, tau, c)
-    # if(Hy < 0 or Hy > 1):
-    #     print('Hy fuera de rango')
+    if(Hy < 0 or Hy > 1):
+        print('Hy fuera de rango')
     # print(str(Hy)+" hy")
     ig_scores = []
     B = int(np.sqrt(len(features)))
     for i in range(features.shape[1]):
         Hyx = calculate_Hyx(features[:, i], labels, m, tau, c, B)
-        # if(Hyx < 0 or Hyx > 1):
-        #     print('Hyx fuera de rango')
+        if(Hyx < 0 or Hyx > 1):
+            print('Hyx fuera de rango')
         # print(str(Hyx)+" hyx")
         ig = Hy - Hyx 
         # print(str(ig)+" ig")
