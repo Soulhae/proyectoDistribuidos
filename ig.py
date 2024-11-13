@@ -19,17 +19,45 @@ def config():
     }
     return params
 
-def plot_information_gain(ig_scores, max_points=100):
-    indices = [x[0] for x in ig_scores][:max_points]
-    ig_values = [x[1] for x in ig_scores][:max_points]
+# def plot_information_gain(ig_scores, max_points=100):
+#     indices = [x[0] for x in ig_scores][:max_points]
+#     ig_values = [x[1] for x in ig_scores][:max_points]
     
+#     plt.figure(figsize=(10, 6))
+#     plt.bar(indices, ig_values, color='skyblue')
+#     plt.xlabel('Number of variable')
+#     plt.ylabel('Inform. Gain')
+#     plt.title('Ganancia Información')
+#     plt.grid(axis='y', linestyle='--', alpha=0.5)
+#     plt.show()    
+
+def plot_information_gain(ig_scores, top_k_relevantes, top_k_indices):
+    top_7_ig_scores = sorted(ig_scores, key=lambda x: x[1], reverse=True)[:7]
+    
+    indices = [x[0] for x in ig_scores]
+    ig_values = [x[1] for x in ig_scores]
+
     plt.figure(figsize=(10, 6))
+    plt.subplot(1, 2, 1)
     plt.bar(indices, ig_values, color='skyblue')
     plt.xlabel('Number of variable')
     plt.ylabel('Inform. Gain')
     plt.title('Ganancia Información')
     plt.grid(axis='y', linestyle='--', alpha=0.5)
-    plt.show()    
+
+    indicesTop = [x[0] for x in top_7_ig_scores]
+    ig_valuesTop = [x[1] for x in top_7_ig_scores]
+    
+    plt.subplot(1, 2, 2)
+    plt.bar(indicesTop, ig_valuesTop, color='orange')
+    plt.xlabel('Number of variable')
+    plt.ylabel('Inform. Gain')
+    plt.title(f'Top-{top_k_relevantes} Inform. Gain')
+    plt.grid(axis='y', linestyle='--', alpha=0.5)
+    plt.xticks(indicesTop)
+
+    plt.tight_layout()
+    plt.show()
 
 def select_top_k_variables(features, ig_scores, K):
     ig_scores_sorted = sorted(ig_scores, key=lambda x: x[1], reverse=True)
@@ -160,7 +188,8 @@ def main():
     end_time = time.time()
     elapsed_time = end_time - start_time
 
-    plot_information_gain(ig_scores)
+    # plot_information_gain(ig_scores)
+    plot_information_gain(ig_scores, 7, top_k_indices)
     
     print(f"Total Runtime ig.py: {elapsed_time:.2f} seconds")
 
