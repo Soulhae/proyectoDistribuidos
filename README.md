@@ -1,10 +1,8 @@
-# pip install numpy
-
-# pip install pandas
-
-# pip install matplotlib
-
-# pip install scipy
+# Ejecutar lo siguiente en consola:
+## pip install numpy
+## pip install pandas
+## pip install matplotlib
+## pip install scipy
 
 # El archivo config.csv debe estar en el mismo directorio que etl.py, ig.py y kpca.py
 
